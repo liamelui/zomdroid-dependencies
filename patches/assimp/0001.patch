@@ -1,0 +1,41 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index d45eb2253..9a59c971b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -894,3 +894,20 @@ if(WIN32)
+     ENDIF()
+   ENDIF()
+ ENDIF ()
++
++if (BUILD_JASSIMP)
++  if(NOT DEFINED ENV{JAVA_HOME})
++    message(FATAL_ERROR "JAVA_HOME is not set")
++  endif()
++
++  add_library(jassimp SHARED port/jassimp/jassimp-native/src/jassimp.cpp)
++
++  target_include_directories(jassimp PRIVATE include ${PROJECT_BINARY_DIR} $ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/linux)
++  set_target_properties(jassimp PROPERTIES OUTPUT_NAME jassimp64)
++
++  target_link_libraries(jassimp PRIVATE
++          assimp
++          z
++          log
++  )
++ENDIF()
+diff --git a/code/AssetLib/X/XFileParser.cpp b/code/AssetLib/X/XFileParser.cpp
+index 63c654b65..2df859288 100644
+--- a/code/AssetLib/X/XFileParser.cpp
++++ b/code/AssetLib/X/XFileParser.cpp
+@@ -460,6 +460,11 @@ void XFileParser::ParseDataObjectSkinWeights(Mesh *pMesh) {
+ 
+     // read vertex weights
+     unsigned int numWeights = ReadInt();
++    // Some Direct3D assets in Project Zomboid have 0 weights followed by ;; which breaks loading if not consumed
++    if (numWeights == 0) {
++        GetNextToken();
++        GetNextToken();
++    }
+     bone.mWeights.reserve(numWeights);
+ 
+     for (unsigned int a = 0; a < numWeights; a++) {

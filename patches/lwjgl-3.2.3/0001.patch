@@ -1,0 +1,103 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+new file mode 100755
+index 000000000..98386139d
+--- /dev/null
++++ b/CMakeLists.txt
+@@ -0,0 +1,51 @@
++cmake_minimum_required(VERSION 3.28)
++
++project(lwjgl)
++
++add_compile_definitions(_GNU_SOURCE)
++add_compile_definitions(LWJGL_LINUX)
++
++include_directories(
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/core/src/main/c
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/core/src/generated/c
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/core/src/main/c/linux
++        ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/core/src/main/c/dyncall
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/core/src/generated/c/linux
++
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/opengl/src/main/c
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/opengl/src/generated/c
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/opengl/src/main/c/linux
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/opengl/src/generated/c/linux
++)
++if(ANDROID_ABI STREQUAL "arm64-v8a")
++    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/core/src/main/c/libffi/aarch64)
++elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
++    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/core/src/main/c/libffi/arm)
++elseif(ANDROID_ABI STREQUAL "x86" OR ANDROID_ABI STREQUAL "x86_64")
++    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/core/src/main/c/libffi/x86)
++endif()
++
++file(GLOB CORE_SRC
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/core/src/main/c/*.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/core/src/generated/c/*.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/core/src/main/c/linux/*.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/core/src/generated/c/linux/*.c
++)
++
++add_subdirectory(dyncall)
++
++add_library(lwjgl_core SHARED ${CORE_SRC})
++target_link_libraries(lwjgl_core dl dyncall_s dyncallback_s dynload_s)
++target_compile_options(lwjgl_core PRIVATE -O3
++        -fno-optimize-sibling-calls # LIAMELUI IMPORTANT this prevents tailing call optimizations in org.lwjgl.system.linux.DynamicLinkLoader JNI which break caller addr resolution in android linker
++)
++set_target_properties(lwjgl_core PROPERTIES OUTPUT_NAME lwjgl)
++
++file(GLOB OPENGL_SRC
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/opengl/src/main/c/*.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/opengl/src/generated/c/*.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/opengl/src/main/c/linux/*.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/modules/lwjgl/opengl/src/generated/c/linux/*.c
++)
++list(FILTER OPENGL_SRC EXCLUDE REGEX ".*org_lwjgl_opengl_WGL\.c$")
++add_library(lwjgl_opengl SHARED ${OPENGL_SRC})
+diff --git a/modules/lwjgl/core/src/main/c/linux/LinuxConfig.h b/modules/lwjgl/core/src/main/c/linux/LinuxConfig.h
+index c21c19815..5f9d1be25 100644
+--- a/modules/lwjgl/core/src/main/c/linux/LinuxConfig.h
++++ b/modules/lwjgl/core/src/main/c/linux/LinuxConfig.h
+@@ -5,6 +5,7 @@
+ 
+ #include <stddef.h>
+ #include <inttypes.h>
++#include "stdio.h"
+ 
+ #define DISABLE_WARNINGS() \
+     _Pragma("GCC diagnostic push")
+diff --git a/modules/lwjgl/core/src/main/c/linux/LinuxLWJGL.h b/modules/lwjgl/core/src/main/c/linux/LinuxLWJGL.h
+index 4fe2e13d9..158c6805c 100644
+--- a/modules/lwjgl/core/src/main/c/linux/LinuxLWJGL.h
++++ b/modules/lwjgl/core/src/main/c/linux/LinuxLWJGL.h
+@@ -4,5 +4,5 @@
+  */
+ #pragma once
+ 
+-#include <X11/X.h>
+-#include <X11/Xlib.h>
++//#include <X11/X.h>
++//#include <X11/Xlib.h>
+diff --git a/modules/lwjgl/core/src/main/c/linux/wrap_memcpy.c b/modules/lwjgl/core/src/main/c/linux/wrap_memcpy.c
+index 239c95817..269265a2d 100644
+--- a/modules/lwjgl/core/src/main/c/linux/wrap_memcpy.c
++++ b/modules/lwjgl/core/src/main/c/linux/wrap_memcpy.c
+@@ -1,9 +1,9 @@
+ #include <stddef.h>
+-
+-void *old_memcpy(void *, const void *, size_t);
+-
+-__asm__(".symver old_memcpy,memcpy@GLIBC_2.2.5");
+-
+-void *__wrap_memcpy(void *dest, const void *src, size_t n) {
+-    return old_memcpy(dest, src, n);
+-}
++//
++//void *old_memcpy(void *, const void *, size_t);
++//
++//__asm__(".symver old_memcpy,memcpy@GLIBC_2.2.5");
++//
++//void *__wrap_memcpy(void *dest, const void *src, size_t n) {
++//    return old_memcpy(dest, src, n);
++//}

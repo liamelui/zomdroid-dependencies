@@ -1,0 +1,458 @@
+#include <jni.h>
+
+#define EXTERN(NAME) extern void* zomdroid_jni_##NAME;
+
+#define WRAP_NATIVE_IFACE(NAME) \
+    wrapped_native_interface.NAME = (decltype(wrapped_native_interface.NAME))&zomdroid_jni_##NAME;
+
+#define WRAP_INVOKE_IFACE(NAME) \
+    wrapped_invoke_interface.NAME = (decltype(wrapped_invoke_interface.NAME))&zomdroid_jni_##NAME;
+
+JNINativeInterface_ wrapped_native_interface;
+__attribute__((visibility("default"))) void* g_wrapped_jni_env = &wrapped_native_interface;
+
+JNIInvokeInterface_ wrapped_invoke_interface;
+__attribute__((visibility("default"))) void* g_wrapped_jvm = &wrapped_invoke_interface;
+
+EXTERN(GetVersion                   )
+EXTERN(DefineClass                  )
+EXTERN(FindClass                    )
+EXTERN(FromReflectedMethod          )
+EXTERN(FromReflectedField           )
+EXTERN(ToReflectedMethod            )
+EXTERN(GetSuperclass                )
+EXTERN(IsAssignableFrom             )
+EXTERN(ToReflectedField             )
+EXTERN(Throw                        )
+EXTERN(ThrowNew                     )
+EXTERN(ExceptionOccurred            )
+EXTERN(ExceptionDescribe            )
+EXTERN(ExceptionClear               )
+EXTERN(FatalError                   )
+EXTERN(PushLocalFrame               )
+EXTERN(PopLocalFrame                )
+EXTERN(NewGlobalRef                 )
+EXTERN(DeleteGlobalRef              )
+EXTERN(DeleteLocalRef               )
+EXTERN(IsSameObject                 )
+EXTERN(NewLocalRef                  )
+EXTERN(EnsureLocalCapacity          )
+EXTERN(AllocObject                  )
+EXTERN(NewObject                    )
+EXTERN(NewObjectV                   )
+EXTERN(NewObjectA                   )
+EXTERN(GetObjectClass               )
+EXTERN(IsInstanceOf                 )
+EXTERN(GetMethodID                  )
+EXTERN(CallObjectMethod             )
+EXTERN(CallObjectMethodV            )
+EXTERN(CallObjectMethodA            )
+EXTERN(CallBooleanMethod            )
+EXTERN(CallBooleanMethodV           )
+EXTERN(CallBooleanMethodA           )
+EXTERN(CallByteMethod               )
+EXTERN(CallByteMethodV              )
+EXTERN(CallByteMethodA              )
+EXTERN(CallCharMethod               )
+EXTERN(CallCharMethodV              )
+EXTERN(CallCharMethodA              )
+EXTERN(CallShortMethod              )
+EXTERN(CallShortMethodV             )
+EXTERN(CallShortMethodA             )
+EXTERN(CallIntMethod                )
+EXTERN(CallIntMethodV               )
+EXTERN(CallIntMethodA               )
+EXTERN(CallLongMethod               )
+EXTERN(CallLongMethodV              )
+EXTERN(CallLongMethodA              )
+EXTERN(CallFloatMethod              )
+EXTERN(CallFloatMethodV             )
+EXTERN(CallFloatMethodA             )
+EXTERN(CallDoubleMethod             )
+EXTERN(CallDoubleMethodV            )
+EXTERN(CallDoubleMethodA            )
+EXTERN(CallVoidMethod               )
+EXTERN(CallVoidMethodV              )
+EXTERN(CallVoidMethodA              )
+EXTERN(CallNonvirtualObjectMethod   )
+EXTERN(CallNonvirtualObjectMethodV  )
+EXTERN(CallNonvirtualObjectMethodA  )
+EXTERN(CallNonvirtualBooleanMethod  )
+EXTERN(CallNonvirtualBooleanMethodV )
+EXTERN(CallNonvirtualBooleanMethodA )
+EXTERN(CallNonvirtualByteMethod     )
+EXTERN(CallNonvirtualByteMethodV    )
+EXTERN(CallNonvirtualByteMethodA    )
+EXTERN(CallNonvirtualCharMethod     )
+EXTERN(CallNonvirtualCharMethodV    )
+EXTERN(CallNonvirtualCharMethodA    )
+EXTERN(CallNonvirtualShortMethod    )
+EXTERN(CallNonvirtualShortMethodV   )
+EXTERN(CallNonvirtualShortMethodA   )
+EXTERN(CallNonvirtualIntMethod      )
+EXTERN(CallNonvirtualIntMethodV     )
+EXTERN(CallNonvirtualIntMethodA     )
+EXTERN(CallNonvirtualLongMethod     )
+EXTERN(CallNonvirtualLongMethodV    )
+EXTERN(CallNonvirtualLongMethodA    )
+EXTERN(CallNonvirtualFloatMethod    )
+EXTERN(CallNonvirtualFloatMethodV   )
+EXTERN(CallNonvirtualFloatMethodA   )
+EXTERN(CallNonvirtualDoubleMethod   )
+EXTERN(CallNonvirtualDoubleMethodV  )
+EXTERN(CallNonvirtualDoubleMethodA  )
+EXTERN(CallNonvirtualVoidMethod     )
+EXTERN(CallNonvirtualVoidMethodV    )
+EXTERN(CallNonvirtualVoidMethodA    )
+EXTERN(GetFieldID                   )
+EXTERN(GetObjectField               )
+EXTERN(GetBooleanField              )
+EXTERN(GetByteField                 )
+EXTERN(GetCharField                 )
+EXTERN(GetShortField                )
+EXTERN(GetIntField                  )
+EXTERN(GetLongField                 )
+EXTERN(GetFloatField                )
+EXTERN(GetDoubleField               )
+EXTERN(SetObjectField               )
+EXTERN(SetBooleanField              )
+EXTERN(SetByteField                 )
+EXTERN(SetCharField                 )
+EXTERN(SetShortField                )
+EXTERN(SetIntField                  )
+EXTERN(SetLongField                 )
+EXTERN(SetFloatField                )
+EXTERN(SetDoubleField               )
+EXTERN(GetStaticMethodID            )
+EXTERN(CallStaticObjectMethod       )
+EXTERN(CallStaticObjectMethodV      )
+EXTERN(CallStaticObjectMethodA      )
+EXTERN(CallStaticBooleanMethod      )
+EXTERN(CallStaticBooleanMethodV     )
+EXTERN(CallStaticBooleanMethodA     )
+EXTERN(CallStaticByteMethod         )
+EXTERN(CallStaticByteMethodV        )
+EXTERN(CallStaticByteMethodA        )
+EXTERN(CallStaticCharMethod         )
+EXTERN(CallStaticCharMethodV        )
+EXTERN(CallStaticCharMethodA        )
+EXTERN(CallStaticShortMethod        )
+EXTERN(CallStaticShortMethodV       )
+EXTERN(CallStaticShortMethodA       )
+EXTERN(CallStaticIntMethod          )
+EXTERN(CallStaticIntMethodV         )
+EXTERN(CallStaticIntMethodA         )
+EXTERN(CallStaticLongMethod         )
+EXTERN(CallStaticLongMethodV        )
+EXTERN(CallStaticLongMethodA        )
+EXTERN(CallStaticFloatMethod        )
+EXTERN(CallStaticFloatMethodV       )
+EXTERN(CallStaticFloatMethodA       )
+EXTERN(CallStaticDoubleMethod       )
+EXTERN(CallStaticDoubleMethodV      )
+EXTERN(CallStaticDoubleMethodA      )
+EXTERN(CallStaticVoidMethod         )
+EXTERN(CallStaticVoidMethodV        )
+EXTERN(CallStaticVoidMethodA        )
+EXTERN(GetStaticFieldID             )
+EXTERN(GetStaticObjectField         )
+EXTERN(GetStaticBooleanField        )
+EXTERN(GetStaticByteField           )
+EXTERN(GetStaticCharField           )
+EXTERN(GetStaticShortField          )
+EXTERN(GetStaticIntField            )
+EXTERN(GetStaticLongField           )
+EXTERN(GetStaticFloatField          )
+EXTERN(GetStaticDoubleField         )
+EXTERN(SetStaticObjectField         )
+EXTERN(SetStaticBooleanField        )
+EXTERN(SetStaticByteField           )
+EXTERN(SetStaticCharField           )
+EXTERN(SetStaticShortField          )
+EXTERN(SetStaticIntField            )
+EXTERN(SetStaticLongField           )
+EXTERN(SetStaticFloatField          )
+EXTERN(SetStaticDoubleField         )
+EXTERN(NewString                    )
+EXTERN(GetStringLength              )
+EXTERN(GetStringChars               )
+EXTERN(ReleaseStringChars           )
+EXTERN(NewStringUTF                 )
+EXTERN(GetStringUTFLength           )
+EXTERN(GetStringUTFChars            )
+EXTERN(ReleaseStringUTFChars        )
+EXTERN(GetArrayLength               )
+EXTERN(NewObjectArray               )
+EXTERN(GetObjectArrayElement        )
+EXTERN(SetObjectArrayElement        )
+EXTERN(NewBooleanArray              )
+EXTERN(NewByteArray                 )
+EXTERN(NewCharArray                 )
+EXTERN(NewShortArray                )
+EXTERN(NewIntArray                  )
+EXTERN(NewLongArray                 )
+EXTERN(NewFloatArray                )
+EXTERN(NewDoubleArray               )
+EXTERN(GetBooleanArrayElements      )
+EXTERN(GetByteArrayElements         )
+EXTERN(GetCharArrayElements         )
+EXTERN(GetShortArrayElements        )
+EXTERN(GetIntArrayElements          )
+EXTERN(GetLongArrayElements         )
+EXTERN(GetFloatArrayElements        )
+EXTERN(GetDoubleArrayElements       )
+EXTERN(ReleaseBooleanArrayElements  )
+EXTERN(ReleaseByteArrayElements     )
+EXTERN(ReleaseCharArrayElements     )
+EXTERN(ReleaseShortArrayElements    )
+EXTERN(ReleaseIntArrayElements      )
+EXTERN(ReleaseLongArrayElements     )
+EXTERN(ReleaseFloatArrayElements    )
+EXTERN(ReleaseDoubleArrayElements   )
+EXTERN(GetBooleanArrayRegion        )
+EXTERN(GetByteArrayRegion           )
+EXTERN(GetCharArrayRegion           )
+EXTERN(GetShortArrayRegion          )
+EXTERN(GetIntArrayRegion            )
+EXTERN(GetLongArrayRegion           )
+EXTERN(GetFloatArrayRegion          )
+EXTERN(GetDoubleArrayRegion         )
+EXTERN(SetBooleanArrayRegion        )
+EXTERN(SetByteArrayRegion           )
+EXTERN(SetCharArrayRegion           )
+EXTERN(SetShortArrayRegion          )
+EXTERN(SetIntArrayRegion            )
+EXTERN(SetLongArrayRegion           )
+EXTERN(SetFloatArrayRegion          )
+EXTERN(SetDoubleArrayRegion         )
+EXTERN(RegisterNatives              )
+EXTERN(UnregisterNatives            )
+EXTERN(MonitorEnter                 )
+EXTERN(MonitorExit                  )
+EXTERN(GetJavaVM                    )
+EXTERN(GetStringRegion              )
+EXTERN(GetStringUTFRegion           )
+EXTERN(GetPrimitiveArrayCritical    )
+EXTERN(ReleasePrimitiveArrayCritical)
+EXTERN(GetStringCritical            )
+EXTERN(ReleaseStringCritical        )
+EXTERN(NewWeakGlobalRef             )
+EXTERN(DeleteWeakGlobalRef          )
+EXTERN(ExceptionCheck               )
+EXTERN(NewDirectByteBuffer          )
+EXTERN(GetDirectBufferAddress       )
+EXTERN(GetDirectBufferCapacity      )
+EXTERN(GetObjectRefType             )
+
+EXTERN(DestroyJavaVM              )
+EXTERN(AttachCurrentThread        )
+EXTERN(DetachCurrentThread        )
+EXTERN(GetEnv                     )
+EXTERN(AttachCurrentThreadAsDaemon)
+
+extern "C" __attribute__((visibility("default"))) void jni_wrapper_init() {
+    WRAP_NATIVE_IFACE(GetVersion);
+    WRAP_NATIVE_IFACE(DefineClass                  );
+    WRAP_NATIVE_IFACE(FindClass                    );
+    WRAP_NATIVE_IFACE(FromReflectedMethod          );
+    WRAP_NATIVE_IFACE(FromReflectedField           );
+    WRAP_NATIVE_IFACE(ToReflectedMethod            );
+    WRAP_NATIVE_IFACE(GetSuperclass                );
+    WRAP_NATIVE_IFACE(IsAssignableFrom             );
+    WRAP_NATIVE_IFACE(ToReflectedField             );
+    WRAP_NATIVE_IFACE(Throw                        );
+    WRAP_NATIVE_IFACE(ThrowNew                     );
+    WRAP_NATIVE_IFACE(ExceptionOccurred            );
+    WRAP_NATIVE_IFACE(ExceptionDescribe            );
+    WRAP_NATIVE_IFACE(ExceptionClear               );
+    WRAP_NATIVE_IFACE(FatalError                   );
+    WRAP_NATIVE_IFACE(PushLocalFrame               );
+    WRAP_NATIVE_IFACE(PopLocalFrame                );
+    WRAP_NATIVE_IFACE(NewGlobalRef                 );
+    WRAP_NATIVE_IFACE(DeleteGlobalRef              );
+    WRAP_NATIVE_IFACE(DeleteLocalRef               );
+    WRAP_NATIVE_IFACE(IsSameObject                 );
+    WRAP_NATIVE_IFACE(NewLocalRef                  );
+    WRAP_NATIVE_IFACE(EnsureLocalCapacity          );
+    WRAP_NATIVE_IFACE(AllocObject                  );
+    WRAP_NATIVE_IFACE(NewObjectV                   );
+    WRAP_NATIVE_IFACE(NewObjectA                   );
+    WRAP_NATIVE_IFACE(GetObjectClass               );
+    WRAP_NATIVE_IFACE(IsInstanceOf                 );
+    WRAP_NATIVE_IFACE(GetMethodID                  );
+    WRAP_NATIVE_IFACE(CallObjectMethodV            );
+    WRAP_NATIVE_IFACE(CallObjectMethodA            );
+    WRAP_NATIVE_IFACE(CallBooleanMethodV           );
+    WRAP_NATIVE_IFACE(CallBooleanMethodA           );
+    WRAP_NATIVE_IFACE(CallByteMethodV              );
+    WRAP_NATIVE_IFACE(CallByteMethodA              );
+    WRAP_NATIVE_IFACE(CallCharMethodV              );
+    WRAP_NATIVE_IFACE(CallCharMethodA              );
+    WRAP_NATIVE_IFACE(CallShortMethodV             );
+    WRAP_NATIVE_IFACE(CallShortMethodA             );
+    WRAP_NATIVE_IFACE(CallIntMethodV               );
+    WRAP_NATIVE_IFACE(CallIntMethodA               );
+    WRAP_NATIVE_IFACE(CallLongMethodV              );
+    WRAP_NATIVE_IFACE(CallLongMethodA              );
+    WRAP_NATIVE_IFACE(CallFloatMethodV             );
+    WRAP_NATIVE_IFACE(CallFloatMethodA             );
+    WRAP_NATIVE_IFACE(CallDoubleMethodV            );
+    WRAP_NATIVE_IFACE(CallDoubleMethodA            );
+    WRAP_NATIVE_IFACE(CallVoidMethodV              );
+    WRAP_NATIVE_IFACE(CallVoidMethodA              );
+    WRAP_NATIVE_IFACE(CallNonvirtualObjectMethodV  );
+    WRAP_NATIVE_IFACE(CallNonvirtualObjectMethodA  );
+    WRAP_NATIVE_IFACE(CallNonvirtualBooleanMethodV );
+    WRAP_NATIVE_IFACE(CallNonvirtualBooleanMethodA );
+    WRAP_NATIVE_IFACE(CallNonvirtualByteMethodV    );
+    WRAP_NATIVE_IFACE(CallNonvirtualByteMethodA    );
+    WRAP_NATIVE_IFACE(CallNonvirtualCharMethodV    );
+    WRAP_NATIVE_IFACE(CallNonvirtualCharMethodA    );
+    WRAP_NATIVE_IFACE(CallNonvirtualShortMethodV   );
+    WRAP_NATIVE_IFACE(CallNonvirtualShortMethodA   );
+    WRAP_NATIVE_IFACE(CallNonvirtualIntMethodV     );
+    WRAP_NATIVE_IFACE(CallNonvirtualIntMethodA     );
+    WRAP_NATIVE_IFACE(CallNonvirtualLongMethodV    );
+    WRAP_NATIVE_IFACE(CallNonvirtualLongMethodA    );
+    WRAP_NATIVE_IFACE(CallNonvirtualFloatMethodV   );
+    WRAP_NATIVE_IFACE(CallNonvirtualFloatMethodA   );
+    WRAP_NATIVE_IFACE(CallNonvirtualDoubleMethodV  );
+    WRAP_NATIVE_IFACE(CallNonvirtualDoubleMethodA  );
+    WRAP_NATIVE_IFACE(CallNonvirtualVoidMethodV    );
+    WRAP_NATIVE_IFACE(CallNonvirtualVoidMethodA    );
+    WRAP_NATIVE_IFACE(GetFieldID                   );
+    WRAP_NATIVE_IFACE(GetObjectField               );
+    WRAP_NATIVE_IFACE(GetBooleanField              );
+    WRAP_NATIVE_IFACE(GetByteField                 );
+    WRAP_NATIVE_IFACE(GetCharField                 );
+    WRAP_NATIVE_IFACE(GetShortField                );
+    WRAP_NATIVE_IFACE(GetIntField                  );
+    WRAP_NATIVE_IFACE(GetLongField                 );
+    WRAP_NATIVE_IFACE(GetFloatField                );
+    WRAP_NATIVE_IFACE(GetDoubleField               );
+    WRAP_NATIVE_IFACE(SetObjectField               );
+    WRAP_NATIVE_IFACE(SetBooleanField              );
+    WRAP_NATIVE_IFACE(SetByteField                 );
+    WRAP_NATIVE_IFACE(SetCharField                 );
+    WRAP_NATIVE_IFACE(SetShortField                );
+    WRAP_NATIVE_IFACE(SetIntField                  );
+    WRAP_NATIVE_IFACE(SetLongField                 );
+    WRAP_NATIVE_IFACE(SetFloatField                );
+    WRAP_NATIVE_IFACE(SetDoubleField               );
+    WRAP_NATIVE_IFACE(GetStaticMethodID            );
+    WRAP_NATIVE_IFACE(CallStaticObjectMethodV      );
+    WRAP_NATIVE_IFACE(CallStaticObjectMethodA      );
+    WRAP_NATIVE_IFACE(CallStaticBooleanMethodV     );
+    WRAP_NATIVE_IFACE(CallStaticBooleanMethodA     );
+    WRAP_NATIVE_IFACE(CallStaticByteMethodV        );
+    WRAP_NATIVE_IFACE(CallStaticByteMethodA        );
+    WRAP_NATIVE_IFACE(CallStaticCharMethodV        );
+    WRAP_NATIVE_IFACE(CallStaticCharMethodA        );
+    WRAP_NATIVE_IFACE(CallStaticShortMethodV       );
+    WRAP_NATIVE_IFACE(CallStaticShortMethodA       );
+    WRAP_NATIVE_IFACE(CallStaticIntMethodV         );
+    WRAP_NATIVE_IFACE(CallStaticIntMethodA         );
+    WRAP_NATIVE_IFACE(CallStaticLongMethodV        );
+    WRAP_NATIVE_IFACE(CallStaticLongMethodA        );
+    WRAP_NATIVE_IFACE(CallStaticFloatMethodV       );
+    WRAP_NATIVE_IFACE(CallStaticFloatMethodA       );
+    WRAP_NATIVE_IFACE(CallStaticDoubleMethodV      );
+    WRAP_NATIVE_IFACE(CallStaticDoubleMethodA      );
+    WRAP_NATIVE_IFACE(CallStaticVoidMethodV        );
+    WRAP_NATIVE_IFACE(CallStaticVoidMethodA        );
+    WRAP_NATIVE_IFACE(GetStaticFieldID             );
+    WRAP_NATIVE_IFACE(GetStaticObjectField         );
+    WRAP_NATIVE_IFACE(GetStaticBooleanField        );
+    WRAP_NATIVE_IFACE(GetStaticByteField           );
+    WRAP_NATIVE_IFACE(GetStaticCharField           );
+    WRAP_NATIVE_IFACE(GetStaticShortField          );
+    WRAP_NATIVE_IFACE(GetStaticIntField            );
+    WRAP_NATIVE_IFACE(GetStaticLongField           );
+    WRAP_NATIVE_IFACE(GetStaticFloatField          );
+    WRAP_NATIVE_IFACE(GetStaticDoubleField         );
+    WRAP_NATIVE_IFACE(SetStaticObjectField         );
+    WRAP_NATIVE_IFACE(SetStaticBooleanField        );
+    WRAP_NATIVE_IFACE(SetStaticByteField           );
+    WRAP_NATIVE_IFACE(SetStaticCharField           );
+    WRAP_NATIVE_IFACE(SetStaticShortField          );
+    WRAP_NATIVE_IFACE(SetStaticIntField            );
+    WRAP_NATIVE_IFACE(SetStaticLongField           );
+    WRAP_NATIVE_IFACE(SetStaticFloatField          );
+    WRAP_NATIVE_IFACE(SetStaticDoubleField         );
+    WRAP_NATIVE_IFACE(NewString                    );
+    WRAP_NATIVE_IFACE(GetStringLength              );
+    WRAP_NATIVE_IFACE(GetStringChars               );
+    WRAP_NATIVE_IFACE(ReleaseStringChars           );
+    WRAP_NATIVE_IFACE(NewStringUTF                 );
+    WRAP_NATIVE_IFACE(GetStringUTFLength           );
+    WRAP_NATIVE_IFACE(GetStringUTFChars            );
+    WRAP_NATIVE_IFACE(ReleaseStringUTFChars        );
+    WRAP_NATIVE_IFACE(GetArrayLength               );
+    WRAP_NATIVE_IFACE(NewObjectArray               );
+    WRAP_NATIVE_IFACE(GetObjectArrayElement        );
+    WRAP_NATIVE_IFACE(SetObjectArrayElement        );
+    WRAP_NATIVE_IFACE(NewBooleanArray              );
+    WRAP_NATIVE_IFACE(NewByteArray                 );
+    WRAP_NATIVE_IFACE(NewCharArray                 );
+    WRAP_NATIVE_IFACE(NewShortArray                );
+    WRAP_NATIVE_IFACE(NewIntArray                  );
+    WRAP_NATIVE_IFACE(NewLongArray                 );
+    WRAP_NATIVE_IFACE(NewFloatArray                );
+    WRAP_NATIVE_IFACE(NewDoubleArray               );
+    WRAP_NATIVE_IFACE(GetBooleanArrayElements      );
+    WRAP_NATIVE_IFACE(GetByteArrayElements         );
+    WRAP_NATIVE_IFACE(GetCharArrayElements         );
+    WRAP_NATIVE_IFACE(GetShortArrayElements        );
+    WRAP_NATIVE_IFACE(GetIntArrayElements          );
+    WRAP_NATIVE_IFACE(GetLongArrayElements         );
+    WRAP_NATIVE_IFACE(GetFloatArrayElements        );
+    WRAP_NATIVE_IFACE(GetDoubleArrayElements       );
+    WRAP_NATIVE_IFACE(ReleaseBooleanArrayElements  );
+    WRAP_NATIVE_IFACE(ReleaseByteArrayElements     );
+    WRAP_NATIVE_IFACE(ReleaseCharArrayElements     );
+    WRAP_NATIVE_IFACE(ReleaseShortArrayElements    );
+    WRAP_NATIVE_IFACE(ReleaseIntArrayElements      );
+    WRAP_NATIVE_IFACE(ReleaseLongArrayElements     );
+    WRAP_NATIVE_IFACE(ReleaseFloatArrayElements    );
+    WRAP_NATIVE_IFACE(ReleaseDoubleArrayElements   );
+    WRAP_NATIVE_IFACE(GetBooleanArrayRegion        );
+    WRAP_NATIVE_IFACE(GetByteArrayRegion           );
+    WRAP_NATIVE_IFACE(GetCharArrayRegion           );
+    WRAP_NATIVE_IFACE(GetShortArrayRegion          );
+    WRAP_NATIVE_IFACE(GetIntArrayRegion            );
+    WRAP_NATIVE_IFACE(GetLongArrayRegion           );
+    WRAP_NATIVE_IFACE(GetFloatArrayRegion          );
+    WRAP_NATIVE_IFACE(GetDoubleArrayRegion         );
+    WRAP_NATIVE_IFACE(SetBooleanArrayRegion        );
+    WRAP_NATIVE_IFACE(SetByteArrayRegion           );
+    WRAP_NATIVE_IFACE(SetCharArrayRegion           );
+    WRAP_NATIVE_IFACE(SetShortArrayRegion          );
+    WRAP_NATIVE_IFACE(SetIntArrayRegion            );
+    WRAP_NATIVE_IFACE(SetLongArrayRegion           );
+    WRAP_NATIVE_IFACE(SetFloatArrayRegion          );
+    WRAP_NATIVE_IFACE(SetDoubleArrayRegion         );
+    WRAP_NATIVE_IFACE(RegisterNatives              );
+    WRAP_NATIVE_IFACE(UnregisterNatives            );
+    WRAP_NATIVE_IFACE(MonitorEnter                 );
+    WRAP_NATIVE_IFACE(MonitorExit                  );
+    WRAP_NATIVE_IFACE(GetJavaVM                    );
+    WRAP_NATIVE_IFACE(GetStringRegion              );
+    WRAP_NATIVE_IFACE(GetStringUTFRegion           );
+    WRAP_NATIVE_IFACE(GetPrimitiveArrayCritical    );
+    WRAP_NATIVE_IFACE(ReleasePrimitiveArrayCritical);
+    WRAP_NATIVE_IFACE(GetStringCritical            );
+    WRAP_NATIVE_IFACE(ReleaseStringCritical        );
+    WRAP_NATIVE_IFACE(NewWeakGlobalRef             );
+    WRAP_NATIVE_IFACE(DeleteWeakGlobalRef          );
+    WRAP_NATIVE_IFACE(ExceptionCheck               );
+    WRAP_NATIVE_IFACE(NewDirectByteBuffer          );
+    WRAP_NATIVE_IFACE(GetDirectBufferAddress       );
+    WRAP_NATIVE_IFACE(GetDirectBufferCapacity      );
+    WRAP_NATIVE_IFACE(GetObjectRefType             );
+
+    WRAP_INVOKE_IFACE(DestroyJavaVM              );
+    WRAP_INVOKE_IFACE(AttachCurrentThread        );
+    WRAP_INVOKE_IFACE(DetachCurrentThread        );
+    WRAP_INVOKE_IFACE(GetEnv                     );
+    WRAP_INVOKE_IFACE(AttachCurrentThreadAsDaemon);
+}
