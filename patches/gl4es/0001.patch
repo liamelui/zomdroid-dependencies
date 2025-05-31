@@ -1,0 +1,836 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 62301980..2d37198f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -5,12 +5,16 @@ include(CheckCompilerFlag)
+ 
+ project(gl4es LANGUAGES C)
+ 
+-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
++set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
++set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
++set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+ 
+ link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+ 
++if(DEFINED DEBUG)
++    add_definitions(-DDEBUG)
++endif()
++
+ option(PANDORA "Set to ON if targeting an OpenPandora device" ${PANDORA})
+ option(PYRA "Set to ON if targeting an Dragonbox Pyra device" ${PYRA})
+ option(BCMHOST "Set to ON if targeting an RPi(2) device" ${BCMHOST})
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 388a90f9..9da60489 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -219,10 +219,12 @@ else()
+     if(USE_ANDROID_LOG)
+         target_link_libraries(GL ${log-lib})
+     endif()
+-    
+-    if(CMAKE_SHARED_LIBRARY_SUFFIX MATCHES ".so")
++
++    set_target_properties(GL PROPERTIES OUTPUT_NAME gl4es)
++
++#[[    if(CMAKE_SHARED_LIBRARY_SUFFIX MATCHES ".so")
+         set_target_properties(GL PROPERTIES SUFFIX ".so.1")
+-    endif()
++    endif()]]
+     install(TARGETS GL
+       LIBRARY
+       DESTINATION "/usr/lib/gl4es/"
+diff --git a/src/gl/fpe.c b/src/gl/fpe.c
+index 3da18756..f32b1ed4 100644
+--- a/src/gl/fpe.c
++++ b/src/gl/fpe.c
+@@ -379,7 +379,8 @@ void APIENTRY_GL4ES fpe_program(int ispoint) {
+     glstate->fpe_state->point = ispoint;
+     fpe_state_t state;
+     fpe_ReleventState(&state, glstate->fpe_state, 1);
+-    if(glstate->fpe==NULL || memcmp(&glstate->fpe->state, &state, sizeof(fpe_state_t))) {
++    if(glstate->fpe==NULL || memcmp(&glstate->fpe->state, &state, sizeof(fpe_state_t))) { // liamelui why with memcmp works but with actual compare doesn't ??
++    //if(glstate->fpe==NULL || fpe_state_equal(&glstate->fpe->state, &state)) {
+         // get cached fpe (or new one)
+         glstate->fpe = fpe_GetCache(glstate->fpe_cache, &state, 1);
+     }   
+diff --git a/src/gl/fpe.h b/src/gl/fpe.h
+index e20cb2fe..adfd961f 100644
+--- a/src/gl/fpe.h
++++ b/src/gl/fpe.h
+@@ -13,6 +13,7 @@
+ 
+ #include "gles.h"
+ #include "program.h"
++#include <stdbool.h>
+ 
+ #define FPE_FOG_EXP    0
+ #define FPE_FOG_EXP2   1
+@@ -226,6 +227,100 @@ typedef struct fpe_fpe_s {
+   program_t *glprogram;
+ } fpe_fpe_t;
+ 
++static bool fpe_texture_equal(const fpe_texture_t* a, const fpe_texture_t* b) {
++    return a->texmat     == b->texmat &&
++           a->textype    == b->textype &&
++           a->texadjust  == b->texadjust &&
++           a->texformat  == b->texformat;
++}
++
++static bool fpe_texgen_equal(const fpe_texgen_t* a, const fpe_texgen_t* b) {
++    return a->texgen_s       == b->texgen_s &&
++           a->texgen_s_mode  == b->texgen_s_mode &&
++           a->texgen_t       == b->texgen_t &&
++           a->texgen_t_mode  == b->texgen_t_mode &&
++           a->texgen_r       == b->texgen_r &&
++           a->texgen_r_mode  == b->texgen_r_mode &&
++           a->texgen_q       == b->texgen_q &&
++           a->texgen_q_mode  == b->texgen_q_mode;
++}
++
++static bool fpe_texenv_equal(const fpe_texenv_t* a, const fpe_texenv_t* b) {
++    return a->texenv         == b->texenv &&
++           a->texoprgb0      == b->texoprgb0 &&
++           a->texoprgb1      == b->texoprgb1 &&
++           a->texoprgb2      == b->texoprgb2 &&
++           a->texoprgb3      == b->texoprgb3 &&
++           a->texopalpha0    == b->texopalpha0 &&
++           a->texopalpha1    == b->texopalpha1 &&
++           a->texopalpha2    == b->texopalpha2 &&
++           a->texopalpha3    == b->texopalpha3 &&
++           a->texsrcrgb0     == b->texsrcrgb0 &&
++           a->texsrcrgb1     == b->texsrcrgb1 &&
++           a->texsrcrgb2     == b->texsrcrgb2 &&
++           a->texsrcrgb3     == b->texsrcrgb3 &&
++           a->texsrcalpha0   == b->texsrcalpha0 &&
++           a->texsrcalpha1   == b->texsrcalpha1 &&
++           a->texsrcalpha2   == b->texsrcalpha2 &&
++           a->texsrcalpha3   == b->texsrcalpha3 &&
++           a->texrgbscale    == b->texrgbscale &&
++           a->texalphascale  == b->texalphascale;
++    // ignore dummy
++}
++
++static bool fpe_state_equal(const fpe_state_t* a, const fpe_state_t* b) {
++    for (int i = 0; i < MAX_TEX; ++i) {
++        if (!fpe_texture_equal(&a->texture[i], &b->texture[i])) return false;
++        if (!fpe_texgen_equal(&a->texgen[i], &b->texgen[i])) return false;
++        if (!fpe_texenv_equal(&a->texenv[i], &b->texenv[i])) return false;
++    }
++    if (memcmp(a->texcombine, b->texcombine, sizeof(a->texcombine)) != 0) return false;
++
++    if (a->light != b->light) return false;
++    if (a->light_cutoff180 != b->light_cutoff180) return false;
++    if (a->light_direction != b->light_direction) return false;
++
++    // Bitfields
++    if (a->plane != b->plane) return false;
++    if (a->fogmode != b->fogmode) return false;
++    if (a->fogdist != b->fogdist) return false;
++    if (a->fogsource != b->fogsource) return false;
++    if (a->fog != b->fog) return false;
++    if (a->colorsum != b->colorsum) return false;
++    if (a->lighting != b->lighting) return false;
++    if (a->normalize != b->normalize) return false;
++    if (a->rescaling != b->rescaling) return false;
++    if (a->alphafunc != b->alphafunc) return false;
++    if (a->alphatest != b->alphatest) return false;
++    if (a->twosided != b->twosided) return false;
++    if (a->color_material != b->color_material) return false;
++    if (a->cm_front_mode != b->cm_front_mode) return false;
++    if (a->cm_back_mode != b->cm_back_mode) return false;
++    if (a->cm_front_nullexp != b->cm_front_nullexp) return false;
++    if (a->cm_back_nullexp != b->cm_back_nullexp) return false;
++    if (a->light_separate != b->light_separate) return false;
++    if (a->light_localviewer != b->light_localviewer) return false;
++    if (a->point != b->point) return false;
++    if (a->pointsprite != b->pointsprite) return false;
++    if (a->pointsprite_coord != b->pointsprite_coord) return false;
++    if (a->pointsprite_upper != b->pointsprite_upper) return false;
++    if (a->vertex_prg_enable != b->vertex_prg_enable) return false;
++    if (a->fragment_prg_enable != b->fragment_prg_enable) return false;
++    if (a->blend_enable != b->blend_enable) return false;
++    if (a->blendsrcrgb != b->blendsrcrgb) return false;
++    if (a->blendsrcalpha != b->blendsrcalpha) return false;
++    if (a->blenddstrgb != b->blenddstrgb) return false;
++    if (a->blenddstalpha != b->blenddstalpha) return false;
++    if (a->blendeqrgb != b->blendeqrgb) return false;
++    if (a->blendeqalpha != b->blendeqalpha) return false;
++
++    if (a->vertex_prg_id != b->vertex_prg_id) return false;
++    if (a->fragment_prg_id != b->fragment_prg_id) return false;
++
++    return true;
++}
++
++
+ #ifndef kh_fpecachelist_t
+ typedef struct kh_fpecachelist_s kh_fpecachelist_t;
+ #endif
+diff --git a/src/gl/framebuffers.c b/src/gl/framebuffers.c
+index 93194fcf..5220d29f 100644
+--- a/src/gl/framebuffers.c
++++ b/src/gl/framebuffers.c
+@@ -218,7 +218,7 @@ GLenum APIENTRY_GL4ES gl4es_glCheckFramebufferStatus(GLenum target) {
+ }
+ 
+ void APIENTRY_GL4ES gl4es_glBindFramebuffer(GLenum target, GLuint framebuffer) {
+-    DBG(printf("glBindFramebuffer(%s, %u), list=%s, glstate->fbo.current_fb=%d (draw=%d, read=%d)\n", PrintEnum(target), framebuffer, glstate->list.active?"active":"none", glstate->fbo.current_fb->id, glstate->fbo.fbo_draw->id, glstate->fbo.fbo_read->id);)
++    DBG(printf("glBindFramebuffer(%s, %u), list=%s, glstate->fbo.current_fb=%d (draw=%d, read=%d)\n", PrintEnum(target), framebuffer, glstate->list.active?"active":"none", glstate->fbo.current_fb ? glstate->fbo.current_fb->id : -1, glstate->fbo.fbo_draw ? glstate->fbo.fbo_draw->id : -1, glstate->fbo.fbo_read ? glstate->fbo.fbo_read->id : -1);)
+     PUSH_IF_COMPILING(glBindFramebuffer);
+     LOAD_GLES2_OR_OES(glBindFramebuffer);
+ //    LOAD_GLES2_OR_OES(glCheckFramebufferStatus);
+@@ -1068,7 +1068,7 @@ void APIENTRY_GL4ES gl4es_glBindRenderbuffer(GLenum target, GLuint renderbuffer)
+         return;
+     }
+      glrenderbuffer_t * rend = find_renderbuffer(renderbuffer);
+-    if(!rend || !rend->renderbuffer) {
++    if(!rend || (!rend->renderbuffer && renderbuffer != 0)) {
+         errorShim(GL_INVALID_OPERATION);
+         return;
+     }
+diff --git a/src/gl/program.c b/src/gl/program.c
+index 2eaeb02b..dbe5a861 100644
+--- a/src/gl/program.c
++++ b/src/gl/program.c
+@@ -11,6 +11,8 @@
+ #include "shaderconv.h"
+ #include "fpe_shader.h"
+ 
++#include "uniform_init_parser.h"
++
+ //#define DEBUG
+ #ifdef DEBUG
+ #define DBG(a) a
+@@ -727,6 +729,132 @@ void APIENTRY_GL4ES gl4es_glProgramBinary(GLuint program, GLenum binaryFormat, c
+         errorShim(GL_INVALID_OPERATION);
+ }
+ 
++static void initialize_uniforms(program_t *target_glprogram) {
++    LOAD_GLES(glGetError);
++    LOAD_GLES2(glGetUniformLocation);
++
++    GLint last_prog = 0;
++    gl4es_glGetIntegerv(GL_CURRENT_PROGRAM, &last_prog);
++    bool prog_switch = false;
++    for (int i = 0; i < target_glprogram->attach_size; i++) {
++        GLuint shader = target_glprogram->attach[i];
++        CHECK_SHADER(void, shader)
++        uniform_init_t* init = glshader->uniform_inits;
++        while (init) {
++            if (!init->name || !init->type || !init->initializer) {
++                printf("Failed to initialize uniform: missing fields in initializer structure\n");
++                goto NEXT;
++            }
++
++            printf("Trying to initialize uniform name=%s type=%s init=%s\n", init->name, init->type, init->initializer); // liamelui dbg
++            //DBG()
++
++            GLint location = gles_glGetUniformLocation(target_glprogram->id, init->name);
++
++            if (location == -1) {
++                printf("Failed to initialize uniform name=%s type=%s init=%s: location not found\n", init->name, init->type, init->initializer);
++                goto NEXT;
++            }
++
++            if (!prog_switch && target_glprogram->id != last_prog) {
++                // Switch once. Doing it here instead of at the function start to avoid switching if we don't absolutely need to
++                gl4es_glUseProgram(target_glprogram->id);
++                prog_switch = true;
++            }
++
++
++            int err_count = 0; // purge error log
++            while (gles_glGetError() != GL_NO_ERROR) {
++                err_count++;
++            }
++
++            bool parsing_failed = false;
++
++            if (strcmp(init->type, "bool") == 0) {
++                int val;
++                if (parse_bool(init->initializer, &val)) gl4es_glUniform1i(location, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "bvec2") == 0) {
++                int val[2];
++                if (parse_bvec2(init->initializer, val)) gl4es_glUniform2iv(location, 1, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "bvec3") == 0) {
++                int val[3];
++                if (parse_bvec3(init->initializer, val)) gl4es_glUniform3iv(location, 1, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "bvec4") == 0) {
++                int val[4];
++                if (parse_bvec4(init->initializer, val)) gl4es_glUniform4iv(location, 1, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "int") == 0) {
++                int val;
++                if (parse_int(init->initializer, &val)) gl4es_glUniform1i(location, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "ivec2") == 0) {
++                int val[2];
++                if (parse_ivec2(init->initializer, val)) gl4es_glUniform2iv(location, 1, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "ivec3") == 0) {
++                int val[3];
++                if (parse_ivec3(init->initializer, val)) gl4es_glUniform3iv(location, 1, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "ivec4") == 0) {
++                int val[4];
++                if (parse_ivec4(init->initializer, val)) gl4es_glUniform4iv(location, 1, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "float") == 0) {
++                float val;
++                if (parse_float(init->initializer, &val)) gl4es_glUniform1f(location, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "vec2") == 0) {
++                float val[2];
++                if (parse_vec2(init->initializer, val)) gl4es_glUniform2fv(location, 1, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "vec3") == 0) {
++                float val[3];
++                if (parse_vec3(init->initializer, val)) gl4es_glUniform3fv(location, 1, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "vec4") == 0) {
++                float val[4];
++                if (parse_vec4(init->initializer, val)) gl4es_glUniform4fv(location, 1, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "mat2") == 0) {
++                float val[4];
++                if (parse_mat2(init->initializer, val)) gl4es_glUniformMatrix2fv(location, 1, GL_FALSE, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "mat3") == 0) {
++                float val[9];
++                if (parse_mat3(init->initializer, val)) gl4es_glUniformMatrix3fv(location, 1, GL_FALSE, val);
++                else parsing_failed = true;
++            } else if (strcmp(init->type, "mat4") == 0) {
++                float val[16];
++                if (parse_mat4(init->initializer, val)) gl4es_glUniformMatrix4fv(location, 1, GL_FALSE, val);
++                else parsing_failed = true;
++            } else {
++                printf("Failed to initialize uniform name=%s type=%s init=%s: unknown type\n", init->name, init->type, init->initializer);
++                goto NEXT;
++            }
++
++            if (parsing_failed) {
++                printf("Failed to initialize uniform name=%s type=%s init=%s: failed to parse initializer\n", init->name, init->type, init->initializer);
++                goto NEXT;
++            }
++
++            GLenum err = gles_glGetError();
++            if (err != GL_NO_ERROR)
++                printf("Failed to initialize uniform name=%s type=%s init=%s: glUniform... failed with glerror=%d\n", init->name, init->type, init->initializer, err);
++
++            NEXT:
++            init = init->next;
++        }
++    }
++    if (prog_switch) {
++        gl4es_glUseProgram(last_prog);
++        CHECK_PROGRAM(void, last_prog);
++        APPLY_PROGRAM(last_prog, glprogram);
++    }
++}
++
+ void APIENTRY_GL4ES gl4es_glLinkProgram(GLuint program) {
+     DBG(printf("glLinkProgram(%d)\n", program);)
+     FLUSH_BEGINEND;
+@@ -793,6 +921,7 @@ void APIENTRY_GL4ES gl4es_glLinkProgram(GLuint program) {
+         DBG(printf(" link status = %d\n", glprogram->linked);)
+         if(glprogram->linked) {
+             fill_program(glprogram);
++            initialize_uniforms(glprogram);
+             noerrorShimNoPurge();
+         } else {
+             // should DBG the linker error?
+diff --git a/src/gl/shader.c b/src/gl/shader.c
+index 0bde8f10..0e394bf4 100644
+--- a/src/gl/shader.c
++++ b/src/gl/shader.c
+@@ -1,5 +1,6 @@
+ #include "shader.h"
+ 
++#include <ctype.h>
+ #include "../glx/hardext.h"
+ #include "debug.h"
+ #include "init.h"
+@@ -76,6 +77,12 @@ void actually_deleteshader(GLuint shader) {
+                 free(glshader->source);
+             if(glshader->converted)
+                 free(glshader->converted);
++            uniform_init_t* uniform_init = glshader->uniform_inits;
++            while (uniform_init) {
++                uniform_init_t* tmp = uniform_init;
++                uniform_init = tmp->next;
++                free_uniform_init(tmp);
++            }
+             free(glshader);
+         }
+     }
+@@ -144,6 +151,231 @@ void APIENTRY_GL4ES gl4es_glCompileShader(GLuint shader) {
+         noerrorShim();
+ }
+ 
++#define MAX_PRECISION_KWORDS 3
++static const char* precision_kwords[MAX_PRECISION_KWORDS] = {"lowp", "mediump", "highp"};
++
++char* process_uniform_initializers(const char* glslCode, uniform_init_t** uniform_inits) {
++    if (glslCode == NULL) {
++        return NULL;
++    }
++
++    *uniform_inits = NULL; // I don't know where exactly gl4es initializes shader structure, so I'll null list pointer here just to be safe
++
++    size_t length = strlen(glslCode);
++    size_t result_capacity = length * 2 + 1;
++    char* result = malloc(result_capacity);
++    size_t result_size = 0;
++    size_t scan_pos = 0;
++    size_t chunk_start = 0;
++
++    if (result == NULL) {
++        return NULL;
++    }
++
++    while (scan_pos < length) {
++        if (strncmp(&glslCode[scan_pos], "uniform", 7) == 0 &&
++            (scan_pos == 0 || isspace(glslCode[scan_pos-1]))) {
++
++            // Append previous chunk
++            if (scan_pos > chunk_start) {
++                size_t chunk_length = scan_pos - chunk_start;
++                while (result_size + chunk_length >= result_capacity) {
++                    result_capacity *= 2;
++                    char* new_result = (char*)realloc(result, result_capacity);
++                    if (new_result == NULL) {
++                        free(result);
++                        return NULL;
++                    }
++                    result = new_result;
++                }
++                memcpy(&result[result_size], &glslCode[chunk_start], chunk_length);
++                result_size += chunk_length;
++            }
++
++            const size_t decl_start = scan_pos;
++            scan_pos += 7;  // Skip "uniform"
++
++            // Parse precision and type
++            char precision[8] = {0};
++
++            // Skip whitespace
++            while (scan_pos < length && isspace(glslCode[scan_pos])) {
++                scan_pos++;
++            }
++
++            // Check for precision qualifiers
++            for (int i = 0; i < MAX_PRECISION_KWORDS; ++i) {
++                size_t kw_len = strlen(precision_kwords[i]);
++                if (scan_pos + kw_len <= length &&
++                    strncmp(&glslCode[scan_pos], precision_kwords[i], kw_len) == 0 &&
++                    (scan_pos + kw_len == length || isspace(glslCode[scan_pos + kw_len]) ||
++                     glslCode[scan_pos + kw_len] == ';')) {
++                    snprintf(precision, sizeof(precision), " %s", precision_kwords[i]);
++                    scan_pos += kw_len;
++                    break;
++                }
++            }
++
++            // Skip whitespace again
++            while (scan_pos < length && isspace(glslCode[scan_pos])) {
++                scan_pos++;
++            }
++
++            // Parse type (handling structs, arrays, etc.)
++            size_t type_start = scan_pos;
++            while (scan_pos < length) {
++                if (glslCode[scan_pos] == '{') {  // Struct type
++                    int brace_count = 1;
++                    scan_pos++;
++                    while (scan_pos < length && brace_count > 0) {
++                        if (glslCode[scan_pos] == '{') brace_count++;
++                        else if (glslCode[scan_pos] == '}') brace_count--;
++                        scan_pos++;
++                    }
++                }
++                else if (glslCode[scan_pos] == '[') {  // Array type
++                    scan_pos++;
++                    while (scan_pos < length && glslCode[scan_pos] != ']') {
++                        scan_pos++;
++                    }
++                    if (scan_pos < length) scan_pos++;
++                }
++                else if (isspace(glslCode[scan_pos])) {
++                    break;
++                }
++                else if (glslCode[scan_pos] == ';' || glslCode[scan_pos] == '=') {
++                    break;
++                }
++                else {
++                    scan_pos++;
++                }
++            }
++
++            size_t type_len = scan_pos - type_start;
++            char* type = alloca(type_len + 1);
++            memcpy(type, &glslCode[type_start], type_len);
++            type[type_len] = '\0';
++
++            // Parse variable name
++            while (scan_pos < length && isspace(glslCode[scan_pos])) {
++                scan_pos++;
++            }
++
++            size_t name_start = scan_pos;
++            while (scan_pos < length) {
++                if (glslCode[scan_pos] == '[') {  // Array in name
++                    scan_pos++;
++                    while (scan_pos < length && glslCode[scan_pos] != ']') {
++                        scan_pos++;
++                    }
++                    if (scan_pos < length) scan_pos++;
++                }
++                else if (isspace(glslCode[scan_pos])) {
++                    break;
++                }
++                else if (glslCode[scan_pos] == ';' || glslCode[scan_pos] == '=') {
++                    break;
++                }
++                else {
++                    scan_pos++;
++                }
++            }
++
++
++            size_t name_len = scan_pos - name_start;
++            char* name = alloca(name_len + 1);
++            memcpy(name, &glslCode[name_start], name_len);
++            name[name_len] = '\0';
++
++          size_t init_start = 0;
++          int has_initializer = 0;
++          while (scan_pos < length && glslCode[scan_pos] != ';') {
++            if (glslCode[scan_pos] == '=') {
++              has_initializer = 1;
++              scan_pos++;
++              while (scan_pos < length && isspace(glslCode[scan_pos])) {
++                scan_pos++;
++              }
++              init_start = scan_pos;
++              size_t init_end = scan_pos;
++              int bracket_depth = 0;
++              while (scan_pos < length && (glslCode[scan_pos] != ';' || bracket_depth > 0)) {
++                if (glslCode[scan_pos] == '(' || glslCode[scan_pos] == '[' || glslCode[scan_pos] == '{') bracket_depth++;
++                if (glslCode[scan_pos] == ')' || glslCode[scan_pos] == ']' || glslCode[scan_pos] == '}') bracket_depth--;
++                scan_pos++;
++                init_end = scan_pos;
++              }
++              size_t init_len = init_end - init_start;
++
++                uniform_init_t* uniform_init = malloc(sizeof(uniform_init_t));
++                uniform_init->next = *uniform_inits;
++                (*uniform_inits) = uniform_init;
++
++                uniform_init->name = malloc(name_len + 1);
++                memcpy(uniform_init->name, name, name_len);
++                uniform_init->name[name_len] = '\0';
++
++                uniform_init->initializer = malloc(init_len + 1);
++                memcpy(uniform_init->initializer, &glslCode[init_start], init_len);
++                uniform_init->initializer[init_len] = '\0';
++
++                uniform_init->type = malloc(type_len + 1);
++                memcpy(uniform_init->type, type, type_len);
++                uniform_init->type[type_len] = '\0';
++
++              break;
++            }
++            scan_pos++;
++          }
++
++          if (scan_pos < length && glslCode[scan_pos] == ';') {
++            scan_pos++;
++          }
++
++            // Write the standardized uniform declaration
++            size_t needed_space = result_size + 20 + strlen(type) + strlen(name) + strlen(precision);
++            while (needed_space >= result_capacity) {
++                result_capacity *= 2;
++                char* new_result = realloc(result, result_capacity);
++                if (new_result == NULL) {
++                    free(result);
++                    return NULL;
++                }
++                result = new_result;
++            }
++            result_size += snprintf(&result[result_size], result_capacity - result_size,
++                                  "uniform%s %s %s;", precision, type, name);
++
++            chunk_start = scan_pos;
++        } else {
++            scan_pos++;
++        }
++    }
++
++    // Append remaining chunk
++    if (chunk_start < length) {
++        size_t chunk_length = length - chunk_start;
++        while (result_size + chunk_length >= result_capacity) {
++            result_capacity *= 2;
++            char* new_result = realloc(result, result_capacity);
++            if (new_result == NULL) {
++                free(result);
++                return NULL;
++            }
++            result = new_result;
++        }
++        memcpy(&result[result_size], &glslCode[chunk_start], chunk_length);
++        result_size += chunk_length;
++    }
++
++    // Null-terminate and trim excess memory
++    result[result_size] = '\0';
++    char* final_result = realloc(result, result_size + 1);
++    return final_result ? final_result : result;
++
++    // liamelui need better error handling instead of returning null
++}
++
+ void APIENTRY_GL4ES gl4es_glShaderSource(GLuint shader, GLsizei count, const GLchar * const *string, const GLint *length) {
+     DBG(printf("glShaderSource(%d, %d, %p, %p)\n", shader, count, string, length);)
+     // sanity check
+@@ -174,10 +406,18 @@ void APIENTRY_GL4ES gl4es_glShaderSource(GLuint shader, GLsizei count, const GLc
+         // adapt shader if needed (i.e. not an es2 context and shader is not #version 100)
+         if(glstate->glsl->es2 && !strncmp(glshader->source, "#version 100", 12))
+             glshader->converted = strdup(glshader->source);
+-        else
++        else {
+             glshader->converted = ConvertShader(glshader->source, glshader->type==GL_VERTEX_SHADER?1:0, &glshader->need);
++            char* converted = process_uniform_initializers(glshader->converted, &glshader->uniform_inits);
++            if (converted) {
++                free(glshader->converted);
++                glshader->converted = converted;
++            }
++        }
++
++        //printf("%s\n", glshader->converted);
+         // send source to GLES2 hardware if any
+-        gles_glShaderSource(shader, 1, (const GLchar * const*)((glshader->converted)?(&glshader->converted):(&glshader->source)), NULL);
++        gles_glShaderSource(shader, 1, &glshader->converted, NULL);
+         errorGL();
+     } else
+         noerrorShim();
+@@ -230,8 +470,21 @@ void redoShader(GLuint shader, shaderconv_need_t *need) {
+     if (memcmp(&glshader->need, need, sizeof(shaderconv_need_t))==0)
+         return;
+     free(glshader->converted);
++
++    uniform_init_t* uniform_init = glshader->uniform_inits;
++    while (uniform_init) {
++        uniform_init_t* tmp = uniform_init;
++        uniform_init = tmp->next;
++        free_uniform_init(tmp);
++    }
++
+     memcpy(&glshader->need, need, sizeof(shaderconv_need_t));
+     glshader->converted = ConvertShader(glshader->source, glshader->type==GL_VERTEX_SHADER?1:0, &glshader->need);
++    char* converted = process_uniform_initializers(glshader->converted, &glshader->uniform_inits);
++    if (converted) {
++        free(glshader->converted);
++        glshader->converted = converted;
++    }
+     // send source to GLES2 hardware if any
+     gles_glShaderSource(shader, 1, (const GLchar * const*)((glshader->converted)?(&glshader->converted):(&glshader->source)), NULL);
+     // recompile...
+diff --git a/src/gl/shader.h b/src/gl/shader.h
+index e080eeea..25b0efc5 100644
+--- a/src/gl/shader.h
++++ b/src/gl/shader.h
+@@ -24,6 +24,20 @@ typedef struct shaderconv_need_s {
+     uint32_t    need_texs;          // flags of what tex is needed
+ } shaderconv_need_t;
+ 
++typedef struct uniform_init_s {
++    struct uniform_init_s* next;
++    char* name;
++    char* initializer;
++    char* type;
++} uniform_init_t;
++
++static void free_uniform_init(uniform_init_t* init) {
++    free(init->name);
++    free(init->initializer);
++    free(init->type);
++    free(init);
++}
++
+ struct shader_s {
+     GLuint          id;     // internal id of the shader
+     GLenum          type;   // type of the shader (GL_VERTEX or GL_FRAGMENT)
+@@ -35,6 +49,7 @@ struct shader_s {
+     char*           converted;  // converted source (or null if nothing)
+     // shaderconv
+     shaderconv_need_t  need;    // the varying need / provide of the shader
++    uniform_init_t*   uniform_inits; // list of uniform initializers to be handled after shader linking
+ }; // shader_t defined in oldprogram.h
+ 
+ KHASH_MAP_DECLARE_INT(shaderlist, struct shader_s *);
+diff --git a/src/gl/uniform.c b/src/gl/uniform.c
+index 98b56148..06876e11 100644
+--- a/src/gl/uniform.c
++++ b/src/gl/uniform.c
+@@ -675,9 +675,8 @@ void GoUniformMatrix4fv(program_t *glprogram, GLint location, GLsizei count, GLb
+     }
+     // transpose if needed
+     GLfloat *v = (GLfloat*)value;
+-    GLfloat tmp[16];
+     if(transpose) {
+-        v = tmp;
++        v = malloc(sizeof(GLfloat) * 16 * count);;
+         for (int n=0; n<count; n++)
+             matrix_transpose(value+n*4*4, v+n*4*4);
+ 
+@@ -698,6 +697,8 @@ void GoUniformMatrix4fv(program_t *glprogram, GLint location, GLsizei count, GLb
+         //printf("No GLES2 function\n");
+         errorShim(GL_INVALID_OPERATION);    // no GLSL hardware
+     }
++    if (transpose)
++        free(v);
+ }
+ 
+ int GetUniformi(program_t *glprogram, GLint location)
+diff --git a/src/gl/uniform_init_parser.h b/src/gl/uniform_init_parser.h
+new file mode 100644
+index 00000000..abecf724
+--- /dev/null
++++ b/src/gl/uniform_init_parser.h
+@@ -0,0 +1,127 @@
++#ifndef UNIFORM_INIT_PARSER_H
++#define UNIFORM_INIT_PARSER_H
++#include <ctype.h>
++
++static bool parse_float(const char* expr, float* out) {
++    char* end;
++    *out = strtof(expr, &end);
++    return end != expr;
++}
++
++static bool parse_int(const char* expr, int* out) {
++    char* end;
++    *out = (int)strtol(expr, &end, 10);
++    return end != expr;
++}
++
++static bool parse_bool(const char* expr, int* out) {
++    if (strncmp(expr, "true", 4) == 0) {
++        *out = 1;
++        return 1;
++    }
++    if (strncmp(expr, "false", 5) == 0) {
++        *out = 0;
++        return 1;
++    }
++    return 0;
++}
++
++static int parse_float_list(const char* expr, float* out, int count) {
++    const char* p = strchr(expr, '(');
++    if (!p) return 0;
++    p++; // skip '('
++
++    int parsed = 0;
++    while (parsed < count) {
++        while (isspace(*p)) p++;
++
++        // Find next token boundary (comma, space, or ')')
++        const char* token_end = p;
++        while (*token_end && *token_end != ',' && *token_end != ')' && !isspace(*token_end)) {
++            token_end++;
++        }
++
++        // Extract token substring
++        size_t token_len = token_end - p;
++        if (token_len == 0) return 0;
++
++        char token[64];
++        if (token_len >= sizeof(token)) return 0;
++        memcpy(token, p, token_len);
++        token[token_len] = '\0';
++
++        if (!parse_float(token, &out[parsed])) return 0;
++
++        parsed++;
++        p = token_end;
++
++        // Skip commas and whitespace
++        while (*p == ',' || isspace(*p)) p++;
++    }
++
++    while (isspace(*p)) p++;
++    return *p == ')' && parsed == count;
++}
++
++static int parse_int_list(const char* expr, int* out, int count) {
++    const char* p = strchr(expr, '(');
++    if (!p) return 0;
++    p++; // skip '('
++
++    int parsed = 0;
++    while (parsed < count) {
++        while (isspace(*p)) p++;
++
++        // Handle "true"/"false" explicitly for booleans
++        if (strncmp(p, "true", 4) == 0 && (p[4] == ',' || isspace(p[4]) || p[4] == ')')) {
++            out[parsed++] = 1;
++            p += 4;
++        } else if (strncmp(p, "false", 5) == 0 && (p[5] == ',' || isspace(p[5]) || p[5] == ')')) {
++            out[parsed++] = 0;
++            p += 5;
++        } else {
++            // Find next token boundary
++            const char* token_end = p;
++            while (*token_end && *token_end != ',' && *token_end != ')' && !isspace(*token_end)) {
++                token_end++;
++            }
++
++            size_t token_len = token_end - p;
++            if (token_len == 0) return 0;
++
++            char token[64];
++            if (token_len >= sizeof(token)) return 0;
++            memcpy(token, p, token_len);
++            token[token_len] = '\0';
++
++            if (!parse_int(token, &out[parsed])) return 0;
++
++            parsed++;
++            p = token_end;
++        }
++
++        // Skip commas and whitespace
++        while (*p == ',' || isspace(*p)) p++;
++    }
++
++    while (isspace(*p)) p++;
++    return *p == ')' && parsed == count;
++}
++
++static int parse_bvec2(const char* expr, int out[2])  { return parse_int_list(expr, out, 2); }
++static int parse_bvec3(const char* expr, int out[3])  { return parse_int_list(expr, out, 3); }
++static int parse_bvec4(const char* expr, int out[4])  { return parse_int_list(expr, out, 4); }
++
++static int parse_ivec2(const char* expr, int out[2])  { return parse_int_list(expr, out, 2); }
++static int parse_ivec3(const char* expr, int out[3])  { return parse_int_list(expr, out, 3); }
++static int parse_ivec4(const char* expr, int out[4])  { return parse_int_list(expr, out, 4); }
++
++static int parse_vec2(const char* expr, float out[2])  { return parse_float_list(expr, out, 2); }
++static int parse_vec3(const char* expr, float out[3])  { return parse_float_list(expr, out, 3); }
++static int parse_vec4(const char* expr, float out[4])  { return parse_float_list(expr, out, 4); }
++
++static int parse_mat2(const char* expr, float out[4])   { return parse_float_list(expr, out, 4); }
++static int parse_mat3(const char* expr, float out[9])   { return parse_float_list(expr, out, 9); }
++static int parse_mat4(const char* expr, float out[16])  { return parse_float_list(expr, out, 16); }
++
++#endif //UNIFORM_INIT_PARSER_H
