@@ -1,10 +1,6 @@
 name: Build All
 
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
   workflow_dispatch:
 
 jobs:
@@ -58,6 +54,10 @@ jobs:
           ./build-lwjgl-3.3.6.sh
           chmod +x ./build-jniwrapper.sh
           ./build-jniwrapper.sh
+          chmod +x ./build-gl4es.sh
+          ./build-gl4es.sh
+          chmod +x ./build-zomdroid-agent.sh
+          ./build-zomdroid-agent.sh
     - name: Upload all built targets
       uses: actions/upload-artifact@v4
       with:
